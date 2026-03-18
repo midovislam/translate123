@@ -179,7 +179,7 @@ export default function Home() {
         {/* Notch */}
         <div className="hidden md:block absolute top-0 left-1/2 -translate-x-1/2 w-[120px] h-[30px] bg-gray-900 rounded-b-2xl z-50" />
 
-        <main className="flex flex-col h-dvh md:h-full bg-white">
+        <main className="flex flex-col h-dvh md:h-full bg-white overflow-hidden">
           {/* Top bar */}
           <header className="flex items-center justify-between px-5 py-3 border-b border-gray-100 shrink-0">
             <span className="text-sm font-semibold text-gray-900 tracking-tight">translate123</span>
