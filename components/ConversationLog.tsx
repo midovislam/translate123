@@ -47,7 +47,7 @@ export function ConversationLog({ entries }: Props) {
         ref={heroRef}
         className="min-h-full flex flex-col justify-center"
       >
-        <TranslationEntry entry={lastEntry} variant="hero" />
+        <TranslationEntry key={lastEntry.id} entry={lastEntry} variant="hero" />
       </div>
     </div>
   );
