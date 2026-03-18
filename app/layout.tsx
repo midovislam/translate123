@@ -8,6 +8,15 @@ export const metadata: Metadata = {
   title: "translate123",
   description: "Real-time bilingual conversation translator",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    title: "translate123",
+    description: "Real-time bilingual conversation translator",
+    images: [{ url: "/og-image.png", width: 1200, height: 1200 }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
