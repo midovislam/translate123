@@ -24,9 +24,14 @@ export async function POST(req: NextRequest) {
 
     const openai = new OpenAI({ apiKey });
 
+    const langName = LANG_NAMES[lang];
+    const input = langName
+      ? `[Speaking in ${langName}] ${text}`
+      : text;
+
     const response = await openai.audio.speech.create({
       model: "tts-1-hd",
-      input: text,
+      input,
       voice: "nova",
       response_format: "mp3",
     });
@@ -34,7 +39,7 @@ export async function POST(req: NextRequest) {
     return new Response(response.body, {
       headers: { "Content-Type": "audio/mpeg" },
     });
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("TTS error:", err);
     const message = err instanceof Error ? err.message : "Unknown error";
     return new Response(JSON.stringify({ error: message }), {
@@ -43,3 +48,11 @@ export async function POST(req: NextRequest) {
     });
   }
 }
+
+const LANG_NAMES: Record<string, string> = {
+  ru: "Russian", pt: "Portuguese", en: "English", es: "Spanish",
+  fr: "French", de: "German", it: "Italian", zh: "Chinese",
+  ja: "Japanese", ko: "Korean", ar: "Arabic", tr: "Turkish",
+  pl: "Polish", uk: "Ukrainian", nl: "Dutch", hi: "Hindi",
+  he: "Hebrew", th: "Thai", vi: "Vietnamese", ro: "Romanian",
+};
