@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { ConversationEntry } from "@/lib/storage";
 import { getLang } from "@/lib/languages";
 import { loadApiKey } from "@/lib/storage";
@@ -97,6 +97,45 @@ function SpeakerButton({ text, lang, size = "w-5 h-5" }: { text: string; lang: s
   );
 }
 
+function CopyButton({ text, size = "w-5 h-5" }: { text: string; size?: string }) {
+  const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+  }, []);
+
+  async function handleClick() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // fallback: do nothing
+    }
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      className="shrink-0 p-1 text-gray-300 hover:text-gray-500 transition-colors"
+      aria-label="Copy translation"
+    >
+      {copied ? (
+        <svg className={size} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      ) : (
+        <svg className={size} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: Props) {
   const sourceLang = getLang(entry.sourceLang);
   const targetLang = getLang(entry.targetLang);
@@ -187,7 +226,10 @@ export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: 
           <p className={`${getHeroTranslationSize(entry.translation)} font-semibold leading-snug flex-1 ${translating ? "text-gray-400 animate-pulse" : "text-gray-900"}`}>
             {entry.translation}
           </p>
-          <SpeakerButton text={entry.translation} lang={entry.targetLang} size="w-6 h-6" />
+          <div className="flex flex-col shrink-0">
+            <CopyButton text={entry.translation} size="w-6 h-6" />
+            <SpeakerButton text={entry.translation} lang={entry.targetLang} size="w-6 h-6" />
+          </div>
         </div>
       </div>
     );
@@ -203,7 +245,10 @@ export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: 
       <div className="flex items-start gap-2">
         <span className="text-sm shrink-0 mt-0.5" aria-label={targetLang.name}>{targetLang.flag}</span>
         <p className="text-sm font-medium text-gray-700 leading-snug flex-1">{entry.translation}</p>
-        <SpeakerButton text={entry.translation} lang={entry.targetLang} size="w-4 h-4" />
+        <div className="flex shrink-0">
+          <CopyButton text={entry.translation} size="w-4 h-4" />
+          <SpeakerButton text={entry.translation} lang={entry.targetLang} size="w-4 h-4" />
+        </div>
       </div>
     </div>
   );
