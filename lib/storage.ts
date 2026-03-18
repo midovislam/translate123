@@ -15,6 +15,7 @@ export interface LanguagePair {
 const CONVERSATION_KEY = "t123_conversation";
 const PAIR_KEY = "t123_pair";
 const API_KEY_KEY = "t123_api_key";
+const ONBOARDED_KEY = "t123_onboarded";
 
 export function loadConversation(): ConversationEntry[] {
   if (typeof window === "undefined") return [];
@@ -35,12 +36,12 @@ export function clearConversation(): void {
 }
 
 export function loadPair(): LanguagePair {
-  if (typeof window === "undefined") return { langA: "ru", langB: "pt" };
+  if (typeof window === "undefined") return { langA: "en", langB: "ru" };
   try {
     const raw = localStorage.getItem(PAIR_KEY);
-    return raw ? JSON.parse(raw) : { langA: "ru", langB: "pt" };
+    return raw ? JSON.parse(raw) : { langA: "en", langB: "ru" };
   } catch {
-    return { langA: "ru", langB: "pt" };
+    return { langA: "en", langB: "ru" };
   }
 }
 
@@ -59,4 +60,13 @@ export function saveApiKey(key: string): void {
   } else {
     localStorage.removeItem(API_KEY_KEY);
   }
+}
+
+export function hasOnboarded(): boolean {
+  if (typeof window === "undefined") return true;
+  return localStorage.getItem(ONBOARDED_KEY) === "1";
+}
+
+export function setOnboarded(): void {
+  localStorage.setItem(ONBOARDED_KEY, "1");
 }

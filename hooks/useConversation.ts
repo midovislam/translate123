@@ -12,7 +12,7 @@ import {
 
 export function useConversation() {
   const [entries, setEntries] = useState<ConversationEntry[]>([]);
-  const [pair, setPairState] = useState<LanguagePair>({ langA: "ru", langB: "pt" });
+  const [pair, setPairState] = useState<LanguagePair>({ langA: "en", langB: "ru" });
 
   useEffect(() => {
     setEntries(loadConversation());
