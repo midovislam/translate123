@@ -3,8 +3,7 @@ import OpenAI from "openai";
 
 export async function POST(req: NextRequest) {
   try {
-    const userKey = req.headers.get("x-api-key");
-    const apiKey = userKey || process.env.OPENAI_API_KEY;
+    const apiKey = req.headers.get("x-api-key");
 
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "No API key" }), {
