@@ -12,32 +12,32 @@ export function RecordButton({ state, onToggle, onKeyboardOpen }: Props) {
   const isRecording = state === "recording";
   const isProcessing = state === "processing";
   const pressTimeRef = useRef<number>(0);
-  const holdModeRef = useRef(false);
+  const recordingModeRef = useRef<"none" | "deciding" | "tap">("none");
 
   const handlePointerDown = useCallback(() => {
     if (isProcessing) return;
     if (!isRecording) {
-      // Start recording on press
       pressTimeRef.current = Date.now();
-      holdModeRef.current = false;
+      recordingModeRef.current = "deciding";
       onToggle();
-    } else {
-      // Already recording from a previous tap — pressing again to stop
-      pressTimeRef.current = Date.now();
-      holdModeRef.current = false;
     }
   }, [isRecording, isProcessing, onToggle]);
 
   const handlePointerUp = useCallback(() => {
     if (isProcessing) return;
-    const held = Date.now() - pressTimeRef.current;
-    if (isRecording && held > 600) {
-      // Held long enough — release stops recording
+
+    if (recordingModeRef.current === "deciding") {
+      const held = Date.now() - pressTimeRef.current;
+      if (held >= 1000) {
+        recordingModeRef.current = "none";
+        onToggle();
+      } else {
+        recordingModeRef.current = "tap";
+      }
+    } else if (recordingModeRef.current === "tap" && isRecording) {
+      recordingModeRef.current = "none";
       onToggle();
     }
-    // Short press (<600ms): if we just started recording, stay recording (tap mode).
-    // If we were already recording and tapped again, the pointerDown didn't restart,
-    // so we stop on short tap of an already-recording state.
   }, [isRecording, isProcessing, onToggle]);
 
   return (
@@ -100,7 +100,7 @@ export function RecordButton({ state, onToggle, onKeyboardOpen }: Props) {
       </div>
 
       <span className="text-xs text-gray-400 tracking-wide select-none">
-        {isProcessing ? "Translating…" : isRecording ? "Release or tap to stop" : "Tap or hold to speak"}
+        {isProcessing ? "Translating…" : isRecording ? "Tap to stop" : "Tap or hold to speak"}
       </span>
     </div>
   );
