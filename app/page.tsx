@@ -7,7 +7,7 @@ import { LanguagePairSelector } from "@/components/LanguagePairSelector";
 import { ConversationLog } from "@/components/ConversationLog";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { loadApiKey } from "@/lib/storage";
-import { LandmarkSvg } from "@/lib/landmarks";
+import { getQuote } from "@/lib/quotes";
 
 export default function Home() {
   const { entries, addEntry, updateEntry, pair, setPair, clear } = useConversation();
@@ -54,13 +54,23 @@ export default function Home() {
 
   return (
     <div className="h-dvh md:flex md:items-center md:justify-center md:bg-gray-50 relative">
-      {/* Background landmarks — desktop only */}
+      {/* Background quotes — desktop only */}
       <div className="hidden md:block fixed inset-0 pointer-events-none z-0">
-        <div className="absolute left-0 top-0 w-1/2 h-full flex items-center justify-center opacity-[0.05] text-gray-900">
-          <LandmarkSvg code={pair.langA} className="w-[340px] h-[340px]" />
+        <div className="absolute left-0 top-0 w-1/2 h-full flex items-center justify-center">
+          {(() => { const q = getQuote(pair.langA); return q ? (
+            <p className="text-gray-300 italic text-sm text-center max-w-[220px] leading-relaxed select-none">
+              &ldquo;{q.text}&rdquo;<br />
+              <span className="text-xs not-italic">&mdash; {q.author}</span>
+            </p>
+          ) : null; })()}
         </div>
-        <div className="absolute right-0 top-0 w-1/2 h-full flex items-center justify-center opacity-[0.05] text-gray-900">
-          <LandmarkSvg code={pair.langB} className="w-[340px] h-[340px]" />
+        <div className="absolute right-0 top-0 w-1/2 h-full flex items-center justify-center">
+          {(() => { const q = getQuote(pair.langB); return q ? (
+            <p className="text-gray-300 italic text-sm text-center max-w-[220px] leading-relaxed select-none">
+              &ldquo;{q.text}&rdquo;<br />
+              <span className="text-xs not-italic">&mdash; {q.author}</span>
+            </p>
+          ) : null; })()}
         </div>
       </div>
 
