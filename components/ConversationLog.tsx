@@ -5,9 +5,10 @@ import { TranslationEntry } from "./TranslationEntry";
 
 interface Props {
   entries: ConversationEntry[];
+  onUpdateEntry?: (id: string, updates: Partial<Pick<ConversationEntry, "original" | "translation">>) => void;
 }
 
-export function ConversationLog({ entries }: Props) {
+export function ConversationLog({ entries, onUpdateEntry }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
 
@@ -47,7 +48,7 @@ export function ConversationLog({ entries }: Props) {
         ref={heroRef}
         className="min-h-full flex flex-col justify-center"
       >
-        <TranslationEntry key={lastEntry.id} entry={lastEntry} variant="hero" />
+        <TranslationEntry key={lastEntry.id} entry={lastEntry} variant="hero" onUpdateEntry={onUpdateEntry} />
       </div>
     </div>
   );

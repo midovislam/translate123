@@ -10,7 +10,7 @@ import { loadApiKey } from "@/lib/storage";
 import { LandmarkSvg } from "@/lib/landmarks";
 
 export default function Home() {
-  const { entries, addEntry, pair, setPair, clear } = useConversation();
+  const { entries, addEntry, updateEntry, pair, setPair, clear } = useConversation();
   const [error, setError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -86,7 +86,7 @@ export default function Home() {
           </header>
 
           {/* Conversation log */}
-          <ConversationLog entries={entries} />
+          <ConversationLog entries={entries} onUpdateEntry={updateEntry} />
 
           {/* Error toast */}
           {error && (

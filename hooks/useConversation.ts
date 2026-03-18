@@ -32,6 +32,14 @@ export function useConversation() {
     });
   }, []);
 
+  const updateEntry = useCallback((id: string, updates: Partial<Pick<ConversationEntry, "original" | "translation">>) => {
+    setEntries((prev) => {
+      const updated = prev.map((e) => (e.id === id ? { ...e, ...updates } : e));
+      saveConversation(updated);
+      return updated;
+    });
+  }, []);
+
   const setPair = useCallback((pair: LanguagePair) => {
     setPairState(pair);
     savePair(pair);
@@ -42,5 +50,5 @@ export function useConversation() {
     clearConversation();
   }, []);
 
-  return { entries, addEntry, pair, setPair, clear };
+  return { entries, addEntry, updateEntry, pair, setPair, clear };
 }

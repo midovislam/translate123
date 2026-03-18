@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { ConversationEntry } from "@/lib/storage";
 import { getLang } from "@/lib/languages";
 import { loadApiKey } from "@/lib/storage";
@@ -9,6 +9,7 @@ export type EntryVariant = "hero" | "compact";
 interface Props {
   entry: ConversationEntry;
   variant?: EntryVariant;
+  onUpdateEntry?: (id: string, updates: Partial<Pick<ConversationEntry, "original" | "translation">>) => void;
 }
 
 function getHeroTranslationSize(text: string): string {
@@ -96,18 +97,83 @@ function SpeakerButton({ text, lang, size = "w-5 h-5" }: { text: string; lang: s
   );
 }
 
-export function TranslationEntry({ entry, variant = "compact" }: Props) {
+export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: Props) {
   const sourceLang = getLang(entry.sourceLang);
   const targetLang = getLang(entry.targetLang);
   const isHero = variant === "hero";
 
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(entry.original);
+  const [translating, setTranslating] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const startEdit = useCallback(() => {
+    if (!onUpdateEntry) return;
+    setEditText(entry.original);
+    setEditing(true);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }, [entry.original, onUpdateEntry]);
+
+  const submitEdit = useCallback(async () => {
+    const trimmed = editText.trim();
+    if (!trimmed || trimmed === entry.original || !onUpdateEntry) {
+      setEditing(false);
+      return;
+    }
+    setTranslating(true);
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const apiKey = loadApiKey();
+      if (apiKey) headers["x-api-key"] = apiKey;
+
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          text: trimmed,
+          sourceLang: entry.sourceLang,
+          targetLang: entry.targetLang,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        onUpdateEntry(entry.id, { original: trimmed, translation: data.translation });
+      }
+    } catch {
+      // silently fail, keep old text
+    } finally {
+      setTranslating(false);
+      setEditing(false);
+    }
+  }, [editText, entry, onUpdateEntry]);
+
   if (isHero) {
     return (
       <div className="flex flex-col justify-center px-6 py-6">
-        {/* Original — muted */}
+        {/* Original — muted, tappable to edit */}
         <div className="flex items-start gap-3 mb-3">
           <span className="text-xl shrink-0 mt-1" aria-label={sourceLang.name}>{sourceLang.flag}</span>
-          <p className={`${getHeroOriginalSize(entry.original)} text-gray-400 leading-relaxed`}>{entry.original}</p>
+          {editing ? (
+            <textarea
+              ref={inputRef}
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitEdit(); }
+                if (e.key === "Escape") setEditing(false);
+              }}
+              onBlur={submitEdit}
+              className={`${getHeroOriginalSize(editText)} text-gray-600 leading-relaxed flex-1 bg-transparent border-b-2 border-blue-400 outline-none resize-none`}
+              rows={1}
+            />
+          ) : (
+            <p
+              onClick={startEdit}
+              className={`${getHeroOriginalSize(entry.original)} text-gray-400 leading-relaxed ${onUpdateEntry ? "cursor-text active:text-gray-500" : ""}`}
+            >
+              {entry.original}
+            </p>
+          )}
         </div>
         {/* Arrow */}
         <div className="pl-5 mb-3">
@@ -118,7 +184,9 @@ export function TranslationEntry({ entry, variant = "compact" }: Props) {
         {/* Translation — big and bold + speaker */}
         <div className="flex items-start gap-3">
           <span className="text-xl shrink-0 mt-1" aria-label={targetLang.name}>{targetLang.flag}</span>
-          <p className={`${getHeroTranslationSize(entry.translation)} font-semibold text-gray-900 leading-snug flex-1`}>{entry.translation}</p>
+          <p className={`${getHeroTranslationSize(entry.translation)} font-semibold leading-snug flex-1 ${translating ? "text-gray-400 animate-pulse" : "text-gray-900"}`}>
+            {entry.translation}
+          </p>
           <SpeakerButton text={entry.translation} lang={entry.targetLang} size="w-6 h-6" />
         </div>
       </div>

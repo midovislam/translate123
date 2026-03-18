@@ -27,11 +27,14 @@ export async function POST(req: NextRequest) {
     const langAName = LANG_NAMES[langA] ?? langA;
     const langBName = LANG_NAMES[langB] ?? langB;
 
-    // Step 1: Whisper transcription (language auto-detected)
+    // Step 1: Whisper transcription with language prompt hint
+    const promptHint = [NATIVE_GREETINGS[langA], NATIVE_GREETINGS[langB]].filter(Boolean).join(" ");
+
     const transcription = await openai.audio.transcriptions.create({
       file: audio,
       model: "whisper-1",
       response_format: "verbose_json",
+      ...(promptHint && { prompt: promptHint }),
     });
 
     const detectedLang = transcription.language; // e.g. "russian", "portuguese"
@@ -93,6 +96,30 @@ export async function POST(req: NextRequest) {
 function normalize(s: string) {
   return s.toLowerCase().trim();
 }
+
+// Native phrases help Whisper identify the language and improve accuracy
+const NATIVE_GREETINGS: Record<string, string> = {
+  ru: "Привет, как дела?",
+  pt: "Olá, tudo bem?",
+  en: "Hello, how are you?",
+  es: "Hola, ¿cómo estás?",
+  fr: "Bonjour, comment allez-vous?",
+  de: "Hallo, wie geht es Ihnen?",
+  it: "Ciao, come stai?",
+  zh: "你好，你好吗？",
+  ja: "こんにちは、お元気ですか？",
+  ko: "안녕하세요, 어떻게 지내세요?",
+  ar: "مرحبا، كيف حالك؟",
+  tr: "Merhaba, nasılsınız?",
+  pl: "Cześć, jak się masz?",
+  uk: "Привіт, як справи?",
+  nl: "Hallo, hoe gaat het?",
+  hi: "नमस्ते, आप कैसे हैं?",
+  he: "שלום, מה שלומך?",
+  th: "สวัสดี สบายดีไหม?",
+  vi: "Xin chào, bạn khỏe không?",
+  ro: "Bună, ce mai faci?",
+};
 
 const LANG_NAMES: Record<string, string> = {
   ru: "russian",
