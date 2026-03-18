@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
 
 type MicState = "idle" | "recording" | "processing";
 
@@ -15,6 +15,7 @@ interface Props {
 
 export function TextInputBar({ text, onTextChange, onSubmit, onMicTap, onClose, micState, submitting }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const touchStartY = useRef<number | null>(null);
 
   useEffect(() => {
     textareaRef.current?.focus();
@@ -31,36 +32,42 @@ export function TextInputBar({ text, onTextChange, onSubmit, onMicTap, onClose, 
   const hasText = text.trim().length > 0;
   const isRecording = micState === "recording";
   const isMicBusy = micState !== "idle";
+  const showSend = hasText && !isMicBusy;
+
+  // Swipe down to close
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStartY.current === null) return;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    if (dy > 60) onClose();
+    touchStartY.current = null;
+  }, [onClose]);
 
   return (
-    <div className="flex items-end gap-2 px-4 pb-4 pt-2">
-      {/* Close button */}
-      <button
-        onClick={onClose}
-        className="shrink-0 mb-1 p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
-        aria-label="Close keyboard"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-
+    <div
+      className="flex items-end gap-2 px-4 pb-4 pt-2"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Input area */}
-      <div className="flex-1 flex items-end bg-gray-100 rounded-2xl px-3 py-2 min-h-[44px]">
+      <div className="flex-1 flex items-end bg-gray-100 rounded-2xl px-4 py-3 min-h-[48px]">
         <textarea
           ref={textareaRef}
           value={text}
           onChange={(e) => onTextChange(e.target.value)}
           placeholder="Type to translate..."
           rows={1}
-          className="flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-400 outline-none resize-none leading-snug max-h-[120px]"
+          className="flex-1 bg-transparent text-base text-gray-900 placeholder-gray-400 outline-none resize-none leading-snug max-h-[120px]"
         />
 
         {/* Mic button inside input */}
         <button
           onClick={onMicTap}
           disabled={submitting}
-          className={`shrink-0 ml-2 p-1 rounded-full transition-colors ${
+          className={`shrink-0 ml-2 p-1 rounded-full transition-colors relative ${
             isRecording
               ? "text-red-500"
               : isMicBusy
@@ -81,33 +88,31 @@ export function TextInputBar({ text, onTextChange, onSubmit, onMicTap, onClose, 
             </svg>
           )}
           {isRecording && (
-            <span className="absolute w-2 h-2 bg-red-500 rounded-full top-0 right-0 animate-pulse" />
+            <span className="absolute w-2 h-2 bg-red-500 rounded-full -top-0.5 -right-0.5 animate-pulse" />
           )}
         </button>
       </div>
 
-      {/* Send button */}
-      <button
-        onClick={onSubmit}
-        disabled={!hasText || submitting}
-        className={`shrink-0 mb-1 w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-          hasText && !submitting
-            ? "bg-red-500 text-white hover:bg-red-600"
-            : "bg-gray-200 text-gray-400"
-        }`}
-        aria-label="Send"
-      >
-        {submitting ? (
-          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
-          </svg>
-        ) : (
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
-          </svg>
-        )}
-      </button>
+      {/* Send button — hidden while mic is busy */}
+      {showSend && (
+        <button
+          onClick={onSubmit}
+          disabled={submitting}
+          className="shrink-0 mb-1 w-9 h-9 rounded-full flex items-center justify-center bg-red-500 text-white hover:bg-red-600 transition-all"
+          aria-label="Send"
+        >
+          {submitting ? (
+            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+            </svg>
+          )}
+        </button>
+      )}
     </div>
   );
 }

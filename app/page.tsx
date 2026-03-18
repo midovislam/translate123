@@ -69,6 +69,7 @@ export default function Home() {
         targetLang: data.targetLang,
       });
       setInputText("");
+      setKeyboardOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error");
     } finally {
