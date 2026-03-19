@@ -11,9 +11,10 @@ interface Props {
   onClose: () => void;
   micState: MicState;
   submitting: boolean;
+  className?: string;
 }
 
-export function TextInputBar({ text, onTextChange, onSubmit, onMicTap, onClose, micState, submitting }: Props) {
+export function TextInputBar({ text, onTextChange, onSubmit, onMicTap, onClose, micState, submitting, className }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const touchStartY = useRef<number | null>(null);
 
@@ -48,7 +49,7 @@ export function TextInputBar({ text, onTextChange, onSubmit, onMicTap, onClose, 
 
   return (
     <div
-      className="flex items-end gap-2 px-4 pb-4 pt-2"
+      className={`flex items-end gap-2 px-4 pb-4 pt-2${className ? ` ${className}` : ""}`}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >

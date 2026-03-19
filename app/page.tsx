@@ -272,7 +272,7 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <TextInputBar
+                <TextInputBar className="flex-1 min-w-0"
                   text={inputText}
                   onTextChange={setInputText}
                   onSubmit={handleTextSubmit}
