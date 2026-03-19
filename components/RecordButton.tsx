@@ -5,10 +5,11 @@ import { RecorderState } from "@/hooks/useAudioRecorder";
 interface Props {
   state: RecorderState;
   onToggle: () => void;
+  onCancel: () => void;
   onKeyboardOpen: () => void;
 }
 
-export function RecordButton({ state, onToggle, onKeyboardOpen }: Props) {
+export function RecordButton({ state, onToggle, onCancel, onKeyboardOpen }: Props) {
   const isRecording = state === "recording";
   const isProcessing = state === "processing";
   const pressTimeRef = useRef<number>(0);
@@ -43,6 +44,23 @@ export function RecordButton({ state, onToggle, onKeyboardOpen }: Props) {
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="flex items-center gap-4">
+        {/* Cancel button — visible only when recording, reserves space always */}
+        <button
+          onClick={() => {
+            recordingModeRef.current = "none";
+            onCancel();
+          }}
+          aria-label="Cancel recording"
+          className={`w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-all ${
+            isRecording ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        {/* Mic / record button */}
         <button
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
@@ -57,7 +75,6 @@ export function RecordButton({ state, onToggle, onKeyboardOpen }: Props) {
             }
           `}
         >
-          {/* Pulse ring when recording */}
           {isRecording && (
             <>
               <span className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-40" />
@@ -65,7 +82,6 @@ export function RecordButton({ state, onToggle, onKeyboardOpen }: Props) {
             </>
           )}
 
-          {/* Icon */}
           <span className="relative flex items-center justify-center w-full h-full">
             {isProcessing ? (
               <svg className="w-7 h-7 text-white animate-spin" fill="none" viewBox="0 0 24 24">
@@ -73,10 +89,8 @@ export function RecordButton({ state, onToggle, onKeyboardOpen }: Props) {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
               </svg>
             ) : isRecording ? (
-              // Stop square
               <span className="w-6 h-6 rounded-sm bg-white" />
             ) : (
-              // Mic icon
               <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 1a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4z" />
                 <path d="M19 10v2a7 7 0 0 1-14 0v-2H3v2a9 9 0 0 0 8 8.94V23h2v-2.06A9 9 0 0 0 21 12v-2h-2z" />

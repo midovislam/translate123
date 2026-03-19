@@ -35,7 +35,7 @@ export function LanguagePairSelector({ pair, onChange }: Props) {
         className="text-sm font-medium text-gray-700 hover:text-gray-900 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-1.5"
       >
         <span>{langA.flag}</span>
-        <span>{langA.name}</span>
+        <span>{langA.short}</span>
       </button>
 
       {/* Swap — horizontal arrows */}
@@ -55,7 +55,7 @@ export function LanguagePairSelector({ pair, onChange }: Props) {
         className="text-sm font-medium text-gray-700 hover:text-gray-900 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-1.5"
       >
         <span>{langB.flag}</span>
-        <span>{langB.name}</span>
+        <span>{langB.short}</span>
       </button>
 
       {/* Dropdown */}

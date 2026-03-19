@@ -234,7 +234,7 @@ export default function Home() {
               />
             ) : (
               <div className="flex justify-center pb-4 pt-1">
-                <RecordButton state={recorder.state} onToggle={recorder.toggle} onKeyboardOpen={() => setKeyboardOpen(true)} />
+                <RecordButton state={recorder.state} onToggle={recorder.toggle} onCancel={recorder.cancel} onKeyboardOpen={() => setKeyboardOpen(true)} />
               </div>
             )}
           </footer>

@@ -35,6 +35,17 @@ function SpeakerButton({ text, lang, size = "w-5 h-5" }: { text: string; lang: s
   const [state, setState] = useState<TTSState>("idle");
   const audioRef = useRef<{ url: string; audio: HTMLAudioElement } | null>(null);
 
+  // Cleanup blob URL and audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.audio.pause();
+        URL.revokeObjectURL(audioRef.current.url);
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
   async function handleClick() {
     if (state === "playing") {
       audioRef.current?.audio.pause();
@@ -227,8 +238,8 @@ export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: 
             {entry.translation}
           </p>
           <div className="flex flex-col shrink-0">
-            <CopyButton text={entry.translation} size="w-6 h-6" />
             <SpeakerButton text={entry.translation} lang={entry.targetLang} size="w-6 h-6" />
+            <CopyButton text={entry.translation} size="w-6 h-6" />
           </div>
         </div>
       </div>
@@ -246,8 +257,8 @@ export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: 
         <span className="text-sm shrink-0 mt-0.5" aria-label={targetLang.name}>{targetLang.flag}</span>
         <p className="text-sm font-medium text-gray-700 leading-snug flex-1">{entry.translation}</p>
         <div className="flex shrink-0">
-          <CopyButton text={entry.translation} size="w-4 h-4" />
           <SpeakerButton text={entry.translation} lang={entry.targetLang} size="w-4 h-4" />
+          <CopyButton text={entry.translation} size="w-4 h-4" />
         </div>
       </div>
     </div>
