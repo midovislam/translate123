@@ -200,9 +200,9 @@ export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: 
 
   if (isHero) {
     return (
-      <div className="flex flex-col justify-center px-6 py-6">
+      <div className="flex flex-col justify-center px-6 py-6 overflow-hidden">
         {/* Original — muted, tappable to edit */}
-        <div className="flex items-start gap-3 mb-3">
+        <div className="flex items-start gap-3 mb-3 min-w-0">
           <span className="text-xl shrink-0 mt-1" aria-label={sourceLang.name}>{sourceLang.flag}</span>
           {editing ? (
             <textarea
@@ -214,25 +214,25 @@ export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: 
                 if (e.key === "Escape") setEditing(false);
               }}
               onBlur={submitEdit}
-              className={`${getHeroOriginalSize(editText)} text-gray-600 leading-relaxed flex-1 bg-transparent border-b-2 border-blue-400 outline-none resize-none`}
+              className={`${getHeroOriginalSize(editText)} text-gray-600 leading-relaxed flex-1 min-w-0 bg-transparent border-b-2 border-blue-400 outline-none resize-none`}
               rows={1}
             />
           ) : (
-            <>
+            <div className="flex-1 min-w-0">
               <p
                 onClick={startEdit}
-                className={`${getHeroOriginalSize(entry.original)} text-gray-400 leading-relaxed ${onUpdateEntry ? "cursor-text active:text-gray-500" : ""} ${!expanded && entry.original.length > 100 ? "line-clamp-1" : ""}`}
+                className={`${getHeroOriginalSize(entry.original)} text-gray-400 leading-relaxed ${onUpdateEntry ? "cursor-text active:text-gray-500" : ""} ${!expanded && entry.original.length > 100 ? "truncate" : "break-words"}`}
               >
                 {entry.original}
               </p>
-            </>
+              {entry.original.length > 100 && !editing && (
+                <button onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }} className="text-xs text-gray-400 hover:text-gray-500 mt-0.5">
+                  {expanded ? "less" : "more"}
+                </button>
+              )}
+            </div>
           )}
         </div>
-        {entry.original.length > 100 && !editing && (
-          <button onClick={() => setExpanded(!expanded)} className="text-xs text-gray-400 hover:text-gray-500 ml-10 mt-0.5">
-            {expanded ? "less" : "more"}
-          </button>
-        )}
         {/* Arrow */}
         <div className="pl-5 mb-3">
           <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -240,9 +240,9 @@ export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: 
           </svg>
         </div>
         {/* Translation — big and bold + speaker */}
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 min-w-0">
           <span className="text-xl shrink-0 mt-1" aria-label={targetLang.name}>{targetLang.flag}</span>
-          <p className={`${getHeroTranslationSize(entry.translation)} font-semibold leading-snug flex-1 ${translating ? "text-gray-400 animate-pulse" : "text-gray-900"}`}>
+          <p className={`${getHeroTranslationSize(entry.translation)} font-semibold leading-snug flex-1 min-w-0 break-words ${translating ? "text-gray-400 animate-pulse" : "text-gray-900"}`}>
             {entry.translation}
           </p>
           <div className="flex flex-col shrink-0">
@@ -256,14 +256,14 @@ export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: 
 
   // Compact variant — uniform small size for history
   return (
-    <div className="py-3 border-b border-gray-100">
-      <div className="flex items-start gap-2 mb-1">
+    <div className="py-3 border-b border-gray-100 overflow-hidden">
+      <div className="flex items-start gap-2 mb-1 min-w-0">
         <span className="text-sm shrink-0 mt-0.5" aria-label={sourceLang.name}>{sourceLang.flag}</span>
-        <p className="text-sm text-gray-400 leading-snug">{entry.original}</p>
+        <p className="text-sm text-gray-400 leading-snug min-w-0 break-words">{entry.original}</p>
       </div>
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-2 min-w-0">
         <span className="text-sm shrink-0 mt-0.5" aria-label={targetLang.name}>{targetLang.flag}</span>
-        <p className="text-sm font-medium text-gray-700 leading-snug flex-1">{entry.translation}</p>
+        <p className="text-sm font-medium text-gray-700 leading-snug flex-1 min-w-0 break-words">{entry.translation}</p>
         <div className="flex shrink-0">
           <SpeakerButton text={entry.translation} lang={entry.targetLang} size="w-4 h-4" />
           <CopyButton text={entry.translation} size="w-4 h-4" />
