@@ -2,7 +2,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { ConversationEntry } from "@/lib/storage";
 import { getLang } from "@/lib/languages";
-import { loadApiKey } from "@/lib/storage";
+import { loadApiKey, getDeviceId } from "@/lib/storage";
 
 export type EntryVariant = "hero" | "compact";
 
@@ -63,6 +63,8 @@ function SpeakerButton({ text, lang, size = "w-5 h-5" }: { text: string; lang: s
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       const apiKey = loadApiKey();
       if (apiKey) headers["x-api-key"] = apiKey;
+      const deviceId = getDeviceId();
+      if (deviceId) headers["x-device-id"] = deviceId;
 
       const res = await fetch("/api/tts", {
         method: "POST",
@@ -176,6 +178,8 @@ export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: 
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       const apiKey = loadApiKey();
       if (apiKey) headers["x-api-key"] = apiKey;
+      const deviceId = getDeviceId();
+      if (deviceId) headers["x-device-id"] = deviceId;
 
       const res = await fetch("/api/translate", {
         method: "POST",
@@ -215,7 +219,7 @@ export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: 
               }}
               onBlur={submitEdit}
               className={`${getHeroOriginalSize(editText)} text-gray-600 leading-relaxed flex-1 min-w-0 bg-transparent border-b-2 border-blue-400 outline-none resize-none`}
-              rows={1}
+              rows={5}
             />
           ) : (
             <div className="flex-1 min-w-0">

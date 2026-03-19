@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import { resolveOpenAI } from "@/lib/apikey";
 
 const NATIVE_GREETINGS: Record<string, string> = {
   ru: "Привет, как дела?",
@@ -26,16 +26,11 @@ const NATIVE_GREETINGS: Record<string, string> = {
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = req.headers.get("x-api-key");
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "No API key. Add your OpenAI key in Settings." },
-        { status: 401 }
-      );
+    const result = await resolveOpenAI(req, "transcribe");
+    if ("error" in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
-
-    const openai = new OpenAI({ apiKey });
+    const { openai } = result;
 
     const formData = await req.formData();
     const audio = formData.get("audio") as File;

@@ -1,16 +1,16 @@
 import { NextRequest } from "next/server";
-import OpenAI from "openai";
+import { resolveOpenAI } from "@/lib/apikey";
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = req.headers.get("x-api-key");
-
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "No API key" }), {
-        status: 401,
+    const result = await resolveOpenAI(req, "tts");
+    if ("error" in result) {
+      return new Response(JSON.stringify({ error: result.error }), {
+        status: result.status,
         headers: { "Content-Type": "application/json" },
       });
     }
+    const { openai } = result;
 
     const { text, lang } = await req.json();
 
@@ -20,8 +20,6 @@ export async function POST(req: NextRequest) {
         headers: { "Content-Type": "application/json" },
       });
     }
-
-    const openai = new OpenAI({ apiKey });
 
     const langName = LANG_NAMES[lang];
     const input = langName

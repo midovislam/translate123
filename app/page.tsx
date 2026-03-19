@@ -6,17 +6,25 @@ import { RecordButton } from "@/components/RecordButton";
 import { LanguagePairSelector } from "@/components/LanguagePairSelector";
 import { ConversationLog } from "@/components/ConversationLog";
 import { SettingsPanel } from "@/components/SettingsPanel";
-import { ApiKeyPrompt } from "@/components/ApiKeyPrompt";
 import { TextInputBar } from "@/components/TextInputBar";
-import { loadApiKey, hasOnboarded, setOnboarded } from "@/lib/storage";
+import { loadApiKey, getDeviceId, hasOnboarded, setOnboarded } from "@/lib/storage";
 import { getQuote } from "@/lib/quotes";
 import { resizeImage } from "@/lib/resizeImage";
+
+function apiHeaders(contentType?: string): Record<string, string> {
+  const h: Record<string, string> = {};
+  if (contentType) h["Content-Type"] = contentType;
+  const apiKey = loadApiKey();
+  if (apiKey) h["x-api-key"] = apiKey;
+  const deviceId = getDeviceId();
+  if (deviceId) h["x-device-id"] = deviceId;
+  return h;
+}
 
 export default function Home() {
   const { entries, addEntry, updateEntry, pair, setPair, clear } = useConversation();
   const [error, setError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
   const [mockEntry, setMockEntry] = useState<{ id: string; timestamp: number; sourceLang: string; targetLang: string; original: string; translation: string } | null>(null);
 
   useEffect(() => {
@@ -29,7 +37,11 @@ export default function Home() {
       original: "The weather has been unusually warm for this time of year",
       translation: "Погода в это время года была необычно тёплой",
     });
-    const timer = setTimeout(() => setShowApiKeyPrompt(true), 1500);
+    // Auto-complete onboarding after brief demo — no API key required
+    const timer = setTimeout(() => {
+      setOnboarded();
+      setMockEntry(null);
+    }, 2500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -40,12 +52,6 @@ export default function Home() {
   const inputTextRef = useRef(inputText);
   inputTextRef.current = inputText;
 
-  const handleOnboardingDone = useCallback(() => {
-    setOnboarded();
-    setShowApiKeyPrompt(false);
-    setMockEntry(null);
-  }, []);
-
   // Submit typed text for auto-detect translation
   const handleTextSubmit = useCallback(async () => {
     const text = inputTextRef.current.trim();
@@ -53,13 +59,9 @@ export default function Home() {
     setTextSubmitting(true);
     setError(null);
     try {
-      const apiKey = loadApiKey();
       const res = await fetch("/api/translate-detect", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(apiKey ? { "x-api-key": apiKey } : {}),
-        },
+        headers: apiHeaders("application/json"),
         body: JSON.stringify({ text, langA: pair.langA, langB: pair.langB }),
       });
       const data = await res.json();
@@ -91,10 +93,9 @@ export default function Home() {
         formData.append("langA", pair.langA);
         formData.append("langB", pair.langB);
 
-        const apiKey = loadApiKey();
         const res = await fetch("/api/translate-photo", {
           method: "POST",
-          headers: apiKey ? { "x-api-key": apiKey } : {},
+          headers: apiHeaders(),
           body: formData,
         });
 
@@ -127,10 +128,9 @@ export default function Home() {
         formData.append("langA", pair.langA);
         formData.append("langB", pair.langB);
 
-        const apiKey = loadApiKey();
         const res = await fetch("/api/transcribe", {
           method: "POST",
-          headers: apiKey ? { "x-api-key": apiKey } : {},
+          headers: apiHeaders(),
           body: formData,
         });
 
@@ -163,10 +163,9 @@ export default function Home() {
         formData.append("langA", pair.langA);
         formData.append("langB", pair.langB);
 
-        const apiKey = loadApiKey();
         const res = await fetch("/api/process", {
           method: "POST",
-          headers: apiKey ? { "x-api-key": apiKey } : {},
+          headers: apiHeaders(),
           body: formData,
         });
 
@@ -294,10 +293,6 @@ export default function Home() {
             <SettingsPanel onClose={() => setShowSettings(false)} onClear={clear} />
           )}
 
-          {/* First-visit API key prompt */}
-          {showApiKeyPrompt && (
-            <ApiKeyPrompt onDone={handleOnboardingDone} />
-          )}
         </main>
       </div>
     </div>
