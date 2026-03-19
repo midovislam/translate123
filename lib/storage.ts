@@ -16,6 +16,7 @@ const CONVERSATION_KEY = "t123_conversation";
 const PAIR_KEY = "t123_pair";
 const API_KEY_KEY = "t123_api_key";
 const ONBOARDED_KEY = "t123_onboarded";
+const DEVICE_ID_KEY = "t123_device_id";
 
 export function loadConversation(): ConversationEntry[] {
   if (typeof window === "undefined") return [];
@@ -60,6 +61,16 @@ export function saveApiKey(key: string): void {
   } else {
     localStorage.removeItem(API_KEY_KEY);
   }
+}
+
+export function getDeviceId(): string {
+  if (typeof window === "undefined") return "";
+  let id = localStorage.getItem(DEVICE_ID_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(DEVICE_ID_KEY, id);
+  }
+  return id;
 }
 
 export function hasOnboarded(): boolean {
