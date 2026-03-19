@@ -155,6 +155,7 @@ export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: 
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(entry.original);
   const [translating, setTranslating] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const startEdit = useCallback(() => {
@@ -217,14 +218,21 @@ export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: 
               rows={1}
             />
           ) : (
-            <p
-              onClick={startEdit}
-              className={`${getHeroOriginalSize(entry.original)} text-gray-400 leading-relaxed ${onUpdateEntry ? "cursor-text active:text-gray-500" : ""}`}
-            >
-              {entry.original}
-            </p>
+            <>
+              <p
+                onClick={startEdit}
+                className={`${getHeroOriginalSize(entry.original)} text-gray-400 leading-relaxed ${onUpdateEntry ? "cursor-text active:text-gray-500" : ""} ${!expanded && entry.original.length > 100 ? "line-clamp-1" : ""}`}
+              >
+                {entry.original}
+              </p>
+            </>
           )}
         </div>
+        {entry.original.length > 100 && !editing && (
+          <button onClick={() => setExpanded(!expanded)} className="text-xs text-gray-400 hover:text-gray-500 ml-10 mt-0.5">
+            {expanded ? "less" : "more"}
+          </button>
+        )}
         {/* Arrow */}
         <div className="pl-5 mb-3">
           <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">

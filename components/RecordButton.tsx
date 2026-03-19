@@ -7,25 +7,42 @@ interface Props {
   onToggle: () => void;
   onCancel: () => void;
   onKeyboardOpen: () => void;
+  onCameraCapture: (file: File) => void;
+  cameraProcessing?: boolean;
 }
 
-export function RecordButton({ state, onToggle, onCancel, onKeyboardOpen }: Props) {
+export function RecordButton({ state, onToggle, onCancel, onKeyboardOpen, onCameraCapture, cameraProcessing }: Props) {
   const isRecording = state === "recording";
   const isProcessing = state === "processing";
+  const isBusy = isProcessing || cameraProcessing;
   const pressTimeRef = useRef<number>(0);
   const recordingModeRef = useRef<"none" | "deciding" | "tap">("none");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCameraTap = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) onCameraCapture(file);
+      e.target.value = "";
+    },
+    [onCameraCapture]
+  );
 
   const handlePointerDown = useCallback(() => {
-    if (isProcessing) return;
+    if (isBusy) return;
     if (!isRecording) {
       pressTimeRef.current = Date.now();
       recordingModeRef.current = "deciding";
       onToggle();
     }
-  }, [isRecording, isProcessing, onToggle]);
+  }, [isRecording, isBusy, onToggle]);
 
   const handlePointerUp = useCallback(() => {
-    if (isProcessing) return;
+    if (isBusy) return;
 
     if (recordingModeRef.current === "deciding") {
       const held = Date.now() - pressTimeRef.current;
@@ -44,31 +61,50 @@ export function RecordButton({ state, onToggle, onCancel, onKeyboardOpen }: Prop
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="flex items-center gap-4">
-        {/* Cancel button — visible only when recording, reserves space always */}
-        <button
-          onClick={() => {
-            recordingModeRef.current = "none";
-            onCancel();
-          }}
-          aria-label="Cancel recording"
-          className={`w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-all ${
-            isRecording ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        {/* Left — camera (idle) or cancel (recording) */}
+        {isRecording ? (
+          <button
+            onClick={() => {
+              recordingModeRef.current = "none";
+              onCancel();
+            }}
+            aria-label="Cancel recording"
+            className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        ) : (
+          <button
+            onClick={handleCameraTap}
+            disabled={isBusy}
+            className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors disabled:opacity-30"
+            aria-label="Take photo to translate"
+          >
+            {cameraProcessing ? (
+              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+              </svg>
+            )}
+          </button>
+        )}
 
         {/* Mic / record button */}
         <button
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
-          disabled={isProcessing}
+          disabled={isBusy}
           aria-label={isRecording ? "Stop recording" : "Start recording"}
           className={`
             relative w-20 h-20 rounded-full transition-all duration-200 focus:outline-none select-none touch-none
-            ${isProcessing ? "opacity-40 cursor-not-allowed" : "cursor-pointer active:scale-95"}
+            ${isBusy ? "opacity-40 cursor-not-allowed" : "cursor-pointer active:scale-95"}
             ${isRecording
               ? "bg-red-500 shadow-lg shadow-red-200"
               : "bg-red-500 shadow-md shadow-red-100 hover:bg-red-600 hover:shadow-lg hover:shadow-red-200"
@@ -99,10 +135,10 @@ export function RecordButton({ state, onToggle, onCancel, onKeyboardOpen }: Prop
           </span>
         </button>
 
-        {/* Keyboard button */}
+        {/* Keyboard button — right */}
         <button
           onClick={onKeyboardOpen}
-          disabled={isRecording || isProcessing}
+          disabled={isRecording || isBusy}
           className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors disabled:opacity-30"
           aria-label="Type to translate"
         >
@@ -111,10 +147,19 @@ export function RecordButton({ state, onToggle, onCancel, onKeyboardOpen }: Prop
             <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8" />
           </svg>
         </button>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFileChange}
+          className="hidden"
+        />
       </div>
 
       <span className="text-xs text-gray-400 tracking-wide select-none">
-        {isProcessing ? "Translating…" : isRecording ? "Tap to stop" : "Tap or hold to speak"}
+        {cameraProcessing ? "Translating photo…" : isProcessing ? "Translating…" : isRecording ? "Tap to stop" : "Tap or hold to speak"}
       </span>
     </div>
   );

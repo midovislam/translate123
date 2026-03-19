@@ -10,6 +10,7 @@ import { ApiKeyPrompt } from "@/components/ApiKeyPrompt";
 import { TextInputBar } from "@/components/TextInputBar";
 import { loadApiKey, hasOnboarded, setOnboarded } from "@/lib/storage";
 import { getQuote } from "@/lib/quotes";
+import { resizeImage } from "@/lib/resizeImage";
 
 export default function Home() {
   const { entries, addEntry, updateEntry, pair, setPair, clear } = useConversation();
@@ -35,6 +36,7 @@ export default function Home() {
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [inputText, setInputText] = useState("");
   const [textSubmitting, setTextSubmitting] = useState(false);
+  const [photoProcessing, setPhotoProcessing] = useState(false);
   const inputTextRef = useRef(inputText);
   inputTextRef.current = inputText;
 
@@ -76,6 +78,43 @@ export default function Home() {
       setTextSubmitting(false);
     }
   }, [pair, addEntry]);
+
+  // Photo capture handler
+  const handlePhotoCapture = useCallback(
+    async (file: File) => {
+      setPhotoProcessing(true);
+      setError(null);
+      try {
+        const resized = await resizeImage(file);
+        const formData = new FormData();
+        formData.append("image", resized, "photo.jpg");
+        formData.append("langA", pair.langA);
+        formData.append("langB", pair.langB);
+
+        const apiKey = loadApiKey();
+        const res = await fetch("/api/translate-photo", {
+          method: "POST",
+          headers: apiKey ? { "x-api-key": apiKey } : {},
+          body: formData,
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Something went wrong");
+
+        addEntry({
+          original: data.original,
+          translation: data.translation,
+          sourceLang: data.sourceLang,
+          targetLang: data.targetLang,
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Error");
+      } finally {
+        setPhotoProcessing(false);
+      }
+    },
+    [pair, addEntry]
+  );
 
   // Transcribe-only audio handler (append to text input)
   const handleTranscribeAudio = useCallback(
@@ -223,18 +262,29 @@ export default function Home() {
           <footer className="shrink-0 border-t border-gray-100">
             <LanguagePairSelector pair={pair} onChange={setPair} />
             {keyboardOpen ? (
-              <TextInputBar
-                text={inputText}
-                onTextChange={setInputText}
-                onSubmit={handleTextSubmit}
-                onMicTap={transcribeRecorder.toggle}
-                onClose={() => setKeyboardOpen(false)}
-                micState={transcribeRecorder.state}
-                submitting={textSubmitting}
-              />
+              <div className="flex items-end">
+                <button
+                  onClick={() => { setInputText(""); setKeyboardOpen(false); }}
+                  className="shrink-0 mb-5 ml-2 w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label="Back to mic"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <TextInputBar
+                  text={inputText}
+                  onTextChange={setInputText}
+                  onSubmit={handleTextSubmit}
+                  onMicTap={transcribeRecorder.toggle}
+                  onClose={() => { setInputText(""); setKeyboardOpen(false); }}
+                  micState={transcribeRecorder.state}
+                  submitting={textSubmitting}
+                />
+              </div>
             ) : (
               <div className="flex justify-center pb-4 pt-1">
-                <RecordButton state={recorder.state} onToggle={recorder.toggle} onCancel={recorder.cancel} onKeyboardOpen={() => setKeyboardOpen(true)} />
+                <RecordButton state={recorder.state} onToggle={recorder.toggle} onCancel={recorder.cancel} onKeyboardOpen={() => setKeyboardOpen(true)} onCameraCapture={handlePhotoCapture} cameraProcessing={photoProcessing} />
               </div>
             )}
           </footer>
