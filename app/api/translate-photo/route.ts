@@ -40,19 +40,13 @@ export async function POST(req: NextRequest) {
     const mimeType = image.type || "image/jpeg";
     const dataUrl = `data:${mimeType};base64,${base64}`;
 
-    const completion = await openai.chat.completions.create({
+    // Step 1: OCR only — extract text and detect language
+    const ocrResult = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: `You are a translator. The user works with exactly two languages: ${langAName} (code "${langA}") and ${langBName} (code "${langB}"). No other languages exist for you.
-
-Step 1: Extract all visible text from the image.
-Step 2: Decide which of the two languages the extracted text is MAINLY written in.
-Step 3: Translate the extracted text into THE OTHER language. If the text is in ${langAName}, you MUST translate it to ${langBName}. If the text is in ${langBName}, you MUST translate it to ${langAName}. The "translation" field must NEVER be in the same language as the "original" field.
-
-Reply with ONLY this JSON (no markdown, no explanation):
-{"detected":"${langA}" or "${langB}","original":"<extracted text>","translation":"<translated text in the OTHER language>"}`,
+          content: `Extract all visible text from the image. Detect if the text is mainly ${langAName} or ${langBName}. Reply with ONLY this JSON (no markdown): {"detected":"${langA}" or "${langB}","text":"<extracted text>"}`,
         },
         {
           role: "user",
@@ -68,17 +62,15 @@ Reply with ONLY this JSON (no markdown, no explanation):
       max_tokens: 2048,
     });
 
-    const raw = completion.choices[0]?.message?.content?.trim() ?? "";
+    const ocrRaw = ocrResult.choices[0]?.message?.content?.trim() ?? "";
     let detected: string;
     let original: string;
-    let translation: string;
 
     try {
-      const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+      const cleaned = ocrRaw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
       const parsed = JSON.parse(cleaned);
       detected = parsed.detected;
-      original = parsed.original;
-      translation = parsed.translation;
+      original = parsed.text;
     } catch {
       return NextResponse.json(
         { error: "Could not extract text from image" },
@@ -86,21 +78,35 @@ Reply with ONLY this JSON (no markdown, no explanation):
       );
     }
 
-    if (!original || !translation) {
+    if (!original) {
       return NextResponse.json(
         { error: "No readable text found in image" },
         { status: 422 }
       );
     }
 
-    // Normalize detected to one of the two valid codes
+    // Step 2: Translate extracted text (separate call — reliable)
     const sourceLang = detected === langB ? langB : langA;
     const targetLang = sourceLang === langA ? langB : langA;
+    const targetName = LANG_NAMES[targetLang] ?? targetLang;
 
-    // Safety: if model returned same text as both original and translation, it didn't translate
-    if (original.trim() === translation.trim()) {
+    const translateResult = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `You are a translator. Translate the user's text to ${targetName}. Return only the translation, nothing else. Preserve tone and meaning faithfully.`,
+        },
+        { role: "user", content: original },
+      ],
+      temperature: 0.3,
+    });
+
+    const translation = translateResult.choices[0]?.message?.content?.trim() ?? "";
+
+    if (!translation) {
       return NextResponse.json(
-        { error: "Translation failed — please try again" },
+        { error: "Translation failed" },
         { status: 422 }
       );
     }
