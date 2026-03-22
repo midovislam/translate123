@@ -54,7 +54,7 @@ export function TextInputBar({ text, onTextChange, onSubmit, onMicTap, onClose, 
       onTouchEnd={handleTouchEnd}
     >
       {/* Input area */}
-      <div className="flex-1 flex items-end bg-gray-100 rounded-2xl px-4 py-3 min-h-[48px]">
+      <div className="flex-1 flex items-end bg-gray-100 rounded-2xl px-4 py-3 min-h-[48px] min-w-0">
         <textarea
           ref={textareaRef}
           value={text}
