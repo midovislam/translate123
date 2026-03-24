@@ -46,10 +46,18 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// TTS uses capitalized names for the speaking hint
 const LANG_NAMES: Record<string, string> = {
-  ru: "Russian", pt: "Portuguese", en: "English", es: "Spanish",
-  fr: "French", de: "German", it: "Italian", zh: "Chinese",
-  ja: "Japanese", ko: "Korean", ar: "Arabic", tr: "Turkish",
-  pl: "Polish", uk: "Ukrainian", nl: "Dutch", hi: "Hindi",
-  he: "Hebrew", th: "Thai", vi: "Vietnamese", ro: "Romanian",
+  en: "English", es: "Spanish", fr: "French", de: "German",
+  pt: "Portuguese", it: "Italian", ru: "Russian", uk: "Ukrainian",
+  pl: "Polish", nl: "Dutch", ro: "Romanian", tr: "Turkish",
+  sv: "Swedish", da: "Danish", no: "Norwegian", fi: "Finnish",
+  cs: "Czech", hu: "Hungarian", sk: "Slovak", sl: "Slovenian",
+  hr: "Croatian", sr: "Serbian", bg: "Bulgarian", el: "Greek",
+  lt: "Lithuanian", lv: "Latvian", et: "Estonian",
+  zh: "Chinese", ja: "Japanese", ko: "Korean",
+  hi: "Hindi", bn: "Bengali", th: "Thai", vi: "Vietnamese",
+  id: "Indonesian", ms: "Malay", fil: "Filipino",
+  af: "Afrikaans", sw: "Swahili",
+  ar: "Arabic", he: "Hebrew", ur: "Urdu", fa: "Persian",
 };
