@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveOpenAI } from "@/lib/apikey";
-
-const LANG_NAMES: Record<string, string> = {
-  ru: "russian", pt: "portuguese", en: "english", es: "spanish",
-  fr: "french", de: "german", it: "italian", zh: "chinese",
-  ja: "japanese", ko: "korean", ar: "arabic", tr: "turkish",
-  pl: "polish", uk: "ukrainian", nl: "dutch", hi: "hindi",
-  he: "hebrew", th: "thai", vi: "vietnamese", ro: "romanian",
-};
+import { LANG_NAMES } from "@/lib/languages";
 
 export async function POST(req: NextRequest) {
   try {
