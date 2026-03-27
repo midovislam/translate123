@@ -61,8 +61,9 @@ export async function POST(req: NextRequest) {
       targetLang,
     });
   } catch (err) {
-    console.error("Translate-detect API error:", err);
     const message = err instanceof Error ? err.message : "Unknown error";
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error("[translate-detect] error:", JSON.stringify({ message, stack }));
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

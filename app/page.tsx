@@ -11,6 +11,12 @@ import { loadApiKey, getDeviceId, hasOnboarded, setOnboarded } from "@/lib/stora
 import { getQuote } from "@/lib/quotes";
 import { resizeImage } from "@/lib/resizeImage";
 
+function isOfflineError(err: unknown): boolean {
+  if (!navigator.onLine) return true;
+  if (err instanceof TypeError && /fetch|network|aborted/i.test(err.message)) return true;
+  return false;
+}
+
 function apiHeaders(contentType?: string): Record<string, string> {
   const h: Record<string, string> = {};
   if (contentType) h["Content-Type"] = contentType;
@@ -24,8 +30,22 @@ function apiHeaders(contentType?: string): Record<string, string> {
 export default function Home() {
   const { entries, addEntry, updateEntry, pair, setPair, clear } = useConversation();
   const [error, setError] = useState<string | null>(null);
+  const [offline, setOffline] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [mockEntry, setMockEntry] = useState<{ id: string; timestamp: number; sourceLang: string; targetLang: string; original: string; translation: string } | null>(null);
+
+  // Listen for connectivity changes
+  useEffect(() => {
+    const goOffline = () => setOffline(true);
+    const goOnline = () => setOffline(false);
+    window.addEventListener("offline", goOffline);
+    window.addEventListener("online", goOnline);
+    if (!navigator.onLine) setOffline(true);
+    return () => {
+      window.removeEventListener("offline", goOffline);
+      window.removeEventListener("online", goOnline);
+    };
+  }, []);
 
   useEffect(() => {
     if (hasOnboarded()) return;
@@ -75,7 +95,7 @@ export default function Home() {
       setInputText("");
       setKeyboardOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+      if (isOfflineError(err)) { setOffline(true); } else { setError(err instanceof Error ? err.message : "Error"); }
     } finally {
       setTextSubmitting(false);
     }
@@ -109,7 +129,7 @@ export default function Home() {
           targetLang: data.targetLang,
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Error");
+        if (isOfflineError(err)) { setOffline(true); } else { setError(err instanceof Error ? err.message : "Error"); }
       } finally {
         setPhotoProcessing(false);
       }
@@ -142,7 +162,7 @@ export default function Home() {
           return prev + separator + data.text;
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Error");
+        if (isOfflineError(err)) { setOffline(true); } else { setError(err instanceof Error ? err.message : "Error"); }
       } finally {
         transcribeRecorder.reset();
       }
@@ -179,7 +199,7 @@ export default function Home() {
           targetLang: data.targetLang,
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Error");
+        if (isOfflineError(err)) { setOffline(true); } else { setError(err instanceof Error ? err.message : "Error"); }
       } finally {
         recorder.reset();
       }
@@ -291,6 +311,24 @@ export default function Home() {
           {/* Settings overlay */}
           {showSettings && (
             <SettingsPanel onClose={() => setShowSettings(false)} onClear={clear} />
+          )}
+
+          {/* Offline overlay */}
+          {offline && (
+            <div className="absolute inset-0 z-40 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center text-center px-8">
+              <svg className="w-12 h-12 text-gray-300 mb-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856a10.015 10.015 0 014.124-2.63M1.924 8.674a14.96 14.96 0 016.502-3.393m3.065-.27a14.96 14.96 0 018.585 3.663M13.857 9.49a10.013 10.013 0 014.037 2.366" />
+                <circle cx="12" cy="18" r="0.75" fill="currentColor" />
+              </svg>
+              <p className="text-sm font-medium text-gray-700 mb-1">No connection</p>
+              <p className="text-xs text-gray-400 max-w-[220px]">Check your internet and try again. Your history is saved locally.</p>
+              <button
+                onClick={() => { if (navigator.onLine) setOffline(false); }}
+                className="mt-4 px-4 py-2 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Try again
+              </button>
+            </div>
           )}
 
         </main>

@@ -37,8 +37,9 @@ export async function POST(req: NextRequest) {
       headers: { "Content-Type": "audio/mpeg" },
     });
   } catch (err: unknown) {
-    console.error("TTS error:", err);
     const message = err instanceof Error ? err.message : "Unknown error";
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error("[tts] error:", JSON.stringify({ message, stack }));
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
