@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveOpenAI } from "@/lib/apikey";
+import { matchDetectedLang, getLangName } from "@/lib/matchLanguage";
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,8 +19,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const langAName = LANG_NAMES[langA] ?? langA;
-    const langBName = LANG_NAMES[langB] ?? langB;
+    const langAName = getLangName(langA);
+    const langBName = getLangName(langB);
 
     // Step 1: Whisper transcription with language prompt hint
     const promptHint = [NATIVE_GREETINGS[langA], NATIVE_GREETINGS[langB]].filter(Boolean).join(" ");
@@ -91,56 +92,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function normalize(s: string) {
-  return s.toLowerCase().trim();
-}
-
-// Whisper sometimes returns alternative names for languages
-const WHISPER_ALIASES: Record<string, string> = {
-  mandarin: "zh",
-  cantonese: "zh",
-  brasileiro: "pt",
-  castellano: "es",
-  farsi: "fa",
-  persian: "fa",
-  flemish: "nl",
-};
-
-/**
- * Match Whisper's detected language string to a language code.
- * Whisper can return full names ("portuguese"), variants ("brazilian portuguese"),
- * or even ISO codes ("pt"). This function handles all cases.
- */
-function matchDetectedLang(detected: string, codeA: string, codeB: string): string | null {
-  const d = normalize(detected);
-
-  const nameA = normalize(LANG_NAMES[codeA] ?? "");
-  const nameB = normalize(LANG_NAMES[codeB] ?? "");
-
-  // Exact match on full name
-  if (d === nameA) return codeA;
-  if (d === nameB) return codeB;
-
-  // Exact match on ISO code (Whisper sometimes returns "pt", "ru", etc.)
-  if (d === codeA) return codeA;
-  if (d === codeB) return codeB;
-
-  // Check known aliases (e.g. "mandarin" → "zh")
-  const aliasCode = WHISPER_ALIASES[d];
-  if (aliasCode === codeA) return codeA;
-  if (aliasCode === codeB) return codeB;
-
-  // Partial match: "brazilian portuguese" contains "portuguese"
-  if (nameA && d.includes(nameA)) return codeA;
-  if (nameB && d.includes(nameB)) return codeB;
-
-  // Reverse partial: detected "chinese" matches name containing it
-  if (nameA && nameA.includes(d) && d.length >= 3) return codeA;
-  if (nameB && nameB.includes(d) && d.length >= 3) return codeB;
-
-  return null;
-}
-
 // Native phrases help Whisper identify the language and improve accuracy
 const NATIVE_GREETINGS: Record<string, string> = {
   ru: "Привет, как дела? Сегодня хорошая погода. Расскажи мне, пожалуйста.",
@@ -170,26 +121,3 @@ function splitSentences(text: string): string {
     .replace(/([.!?。？！])\s+/g, "$1\n")
     .trim();
 }
-
-const LANG_NAMES: Record<string, string> = {
-  ru: "russian",
-  pt: "portuguese",
-  en: "english",
-  es: "spanish",
-  fr: "french",
-  de: "german",
-  it: "italian",
-  zh: "chinese",
-  ja: "japanese",
-  ko: "korean",
-  ar: "arabic",
-  tr: "turkish",
-  pl: "polish",
-  uk: "ukrainian",
-  nl: "dutch",
-  hi: "hindi",
-  he: "hebrew",
-  th: "thai",
-  vi: "vietnamese",
-  ro: "romanian",
-};
