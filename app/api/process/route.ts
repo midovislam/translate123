@@ -39,20 +39,23 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 2: Determine direction from Whisper's detected language
+    const matched = detectedLang ? matchDetectedLang(detectedLang, langA, langB) : null;
+
     let sourceLang: string;
     let targetLang: string;
     let targetName: string;
 
-    if (detectedLang && normalize(detectedLang) === normalize(langAName)) {
+    if (matched === langA) {
       sourceLang = langA;
       targetLang = langB;
       targetName = langBName;
-    } else if (detectedLang && normalize(detectedLang) === normalize(langBName)) {
+    } else if (matched === langB) {
       sourceLang = langB;
       targetLang = langA;
       targetName = langAName;
     } else {
       // Fallback: assume langA if can't determine
+      console.warn(`[process] Could not match Whisper language "${detectedLang}" to ${langA}/${langB}, falling back to langA`);
       sourceLang = langA;
       targetLang = langB;
       targetName = langBName;
@@ -89,6 +92,52 @@ export async function POST(req: NextRequest) {
 
 function normalize(s: string) {
   return s.toLowerCase().trim();
+}
+
+// Whisper sometimes returns alternative names for languages
+const WHISPER_ALIASES: Record<string, string> = {
+  mandarin: "zh",
+  cantonese: "zh",
+  brasileiro: "pt",
+  castellano: "es",
+  farsi: "fa",
+  persian: "fa",
+  flemish: "nl",
+};
+
+/**
+ * Match Whisper's detected language string to a language code.
+ * Whisper can return full names ("portuguese"), variants ("brazilian portuguese"),
+ * or even ISO codes ("pt"). This function handles all cases.
+ */
+function matchDetectedLang(detected: string, codeA: string, codeB: string): string | null {
+  const d = normalize(detected);
+
+  const nameA = normalize(LANG_NAMES[codeA] ?? "");
+  const nameB = normalize(LANG_NAMES[codeB] ?? "");
+
+  // Exact match on full name
+  if (d === nameA) return codeA;
+  if (d === nameB) return codeB;
+
+  // Exact match on ISO code (Whisper sometimes returns "pt", "ru", etc.)
+  if (d === codeA) return codeA;
+  if (d === codeB) return codeB;
+
+  // Check known aliases (e.g. "mandarin" → "zh")
+  const aliasCode = WHISPER_ALIASES[d];
+  if (aliasCode === codeA) return codeA;
+  if (aliasCode === codeB) return codeB;
+
+  // Partial match: "brazilian portuguese" contains "portuguese"
+  if (nameA && d.includes(nameA)) return codeA;
+  if (nameB && d.includes(nameB)) return codeB;
+
+  // Reverse partial: detected "chinese" matches name containing it
+  if (nameA && nameA.includes(d) && d.length >= 3) return codeA;
+  if (nameB && nameB.includes(d) && d.length >= 3) return codeB;
+
+  return null;
 }
 
 // Native phrases help Whisper identify the language and improve accuracy
