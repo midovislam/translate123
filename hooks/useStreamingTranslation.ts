@@ -44,6 +44,7 @@ export function useStreamingTranslation({ langA, langB, apiHeaders, onError }: O
   const stoppingRef = useRef(false);
   const mimeTypeRef = useRef("");
   const inflightRef = useRef(0);
+  const chunksRef = useRef<StreamChunk[]>([]);
 
   // Keep latest lang values in refs so callbacks always see current values
   const langARef = useRef(langA);
@@ -68,6 +69,12 @@ export function useStreamingTranslation({ langA, langB, apiHeaders, onError }: O
       formData.append("langA", langARef.current);
       formData.append("langB", langBRef.current);
 
+      // Send previous chunk's original text for translation context
+      const prev = chunksRef.current[chunksRef.current.length - 1];
+      if (prev) {
+        formData.append("prevOriginal", prev.original);
+      }
+
       const res = await fetch("/api/stream-chunk", {
         method: "POST",
         headers: apiHeadersRef.current(),
@@ -80,15 +87,17 @@ export function useStreamingTranslation({ langA, langB, apiHeaders, onError }: O
         return;
       }
 
-      setChunks((prev) => [
-        ...prev,
-        {
-          original: data.original,
-          translation: data.translation,
-          sourceLang: data.sourceLang,
-          targetLang: data.targetLang,
-        },
-      ]);
+      const newChunk: StreamChunk = {
+        original: data.original,
+        translation: data.translation,
+        sourceLang: data.sourceLang,
+        targetLang: data.targetLang,
+      };
+      setChunks((prev) => {
+        const updated = [...prev, newChunk];
+        chunksRef.current = updated;
+        return updated;
+      });
     } catch (err) {
       onErrorRef.current(err instanceof Error ? err.message : "Stream chunk failed");
     } finally {
@@ -148,6 +157,7 @@ export function useStreamingTranslation({ langA, langB, apiHeaders, onError }: O
       stoppingRef.current = false;
 
       setChunks([]);
+      chunksRef.current = [];
       setState("recording");
 
       // Start first recorder
