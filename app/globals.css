@@ -26,3 +26,12 @@ html, body {
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
 }
+
+@keyframes streaming-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.streaming-pulse {
+  animation: streaming-pulse 1.5s ease-in-out infinite;
+}
