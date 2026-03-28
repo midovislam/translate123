@@ -225,7 +225,7 @@ export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: 
             <div className="flex-1 min-w-0">
               <p
                 onClick={startEdit}
-                className={`${getHeroOriginalSize(entry.original)} text-gray-400 leading-relaxed ${onUpdateEntry ? "cursor-text active:text-gray-500" : ""} ${!expanded && entry.original.length > 100 ? "truncate" : "break-words"}`}
+                className={`${getHeroOriginalSize(entry.original)} text-gray-400 leading-relaxed whitespace-pre-line ${onUpdateEntry ? "cursor-text active:text-gray-500" : ""} ${!expanded && entry.original.length > 100 ? "truncate" : "break-words"}`}
               >
                 {entry.original}
               </p>
@@ -246,7 +246,7 @@ export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: 
         {/* Translation — big and bold + speaker */}
         <div className="flex items-start gap-3 min-w-0">
           <span className="text-xl shrink-0 mt-1" aria-label={targetLang.name}>{targetLang.flag}</span>
-          <p className={`${getHeroTranslationSize(entry.translation)} font-semibold leading-snug flex-1 min-w-0 break-words ${translating ? "text-gray-400 animate-pulse" : "text-gray-900"}`}>
+          <p className={`${getHeroTranslationSize(entry.translation)} font-semibold leading-snug flex-1 min-w-0 break-words whitespace-pre-line ${translating ? "text-gray-400 animate-pulse" : "text-gray-900"}`}>
             {entry.translation}
           </p>
           <div className="flex flex-col shrink-0">
@@ -263,11 +263,11 @@ export function TranslationEntry({ entry, variant = "compact", onUpdateEntry }: 
     <div className="py-3 border-b border-gray-100 overflow-hidden">
       <div className="flex items-start gap-2 mb-1 min-w-0">
         <span className="text-sm shrink-0 mt-0.5" aria-label={sourceLang.name}>{sourceLang.flag}</span>
-        <p className="text-sm text-gray-400 leading-snug min-w-0 break-words">{entry.original}</p>
+        <p className="text-sm text-gray-400 leading-snug min-w-0 break-words whitespace-pre-line">{entry.original}</p>
       </div>
       <div className="flex items-start gap-2 min-w-0">
         <span className="text-sm shrink-0 mt-0.5" aria-label={targetLang.name}>{targetLang.flag}</span>
-        <p className="text-sm font-medium text-gray-700 leading-snug flex-1 min-w-0 break-words">{entry.translation}</p>
+        <p className="text-sm font-medium text-gray-700 leading-snug flex-1 min-w-0 break-words whitespace-pre-line">{entry.translation}</p>
         <div className="flex shrink-0">
           <SpeakerButton text={entry.translation} lang={entry.targetLang} size="w-4 h-4" />
           <CopyButton text={entry.translation} size="w-4 h-4" />

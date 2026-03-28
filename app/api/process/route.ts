@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       temperature: 0.3,
     });
 
-    const translation = completion.choices[0]?.message?.content?.trim() ?? "";
+    const translation = splitSentences(completion.choices[0]?.message?.content?.trim() ?? "");
 
     return NextResponse.json({
       original: text,

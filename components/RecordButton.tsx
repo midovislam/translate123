@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { RecorderState } from "@/hooks/useAudioRecorder";
 
 interface Props {
@@ -17,10 +17,25 @@ export function RecordButton({ state, onToggle, onCancel, onKeyboardOpen, onCame
   const isBusy = isProcessing || cameraProcessing;
   const pressTimeRef = useRef<number>(0);
   const recordingModeRef = useRef<"none" | "deciding" | "tap">("none");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const [showPhotoMenu, setShowPhotoMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu on outside tap
+  useEffect(() => {
+    if (!showPhotoMenu) return;
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowPhotoMenu(false);
+      }
+    }
+    document.addEventListener("pointerdown", handleClick);
+    return () => document.removeEventListener("pointerdown", handleClick);
+  }, [showPhotoMenu]);
 
   const handleCameraTap = useCallback(() => {
-    fileInputRef.current?.click();
+    setShowPhotoMenu((prev) => !prev);
   }, []);
 
   const handleFileChange = useCallback(
@@ -28,6 +43,7 @@ export function RecordButton({ state, onToggle, onCancel, onKeyboardOpen, onCame
       const file = e.target.files?.[0];
       if (file) onCameraCapture(file);
       e.target.value = "";
+      setShowPhotoMenu(false);
     },
     [onCameraCapture]
   );
@@ -76,24 +92,53 @@ export function RecordButton({ state, onToggle, onCancel, onKeyboardOpen, onCame
             </svg>
           </button>
         ) : (
-          <button
-            onClick={handleCameraTap}
-            disabled={isBusy}
-            className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors disabled:opacity-30"
-            aria-label="Take photo to translate"
-          >
-            {cameraProcessing ? (
-              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
-              </svg>
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={handleCameraTap}
+              disabled={isBusy}
+              className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors disabled:opacity-30"
+              aria-label="Photo to translate"
+            >
+              {cameraProcessing ? (
+                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+                </svg>
+              )}
+            </button>
+
+            {/* Popup menu: Camera vs Gallery */}
+            {showPhotoMenu && (
+              <div className="absolute bottom-full left-0 mb-2 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-50 w-36">
+                <button
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                >
+                  <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+                  </svg>
+                  Camera
+                </button>
+                <div className="border-t border-gray-100" />
+                <button
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                >
+                  <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16l5-5 4 4 4-6 5 7" />
+                  </svg>
+                  Gallery
+                </button>
+              </div>
             )}
-          </button>
+          </div>
         )}
 
         {/* Mic / record button */}
@@ -148,11 +193,19 @@ export function RecordButton({ state, onToggle, onCancel, onKeyboardOpen, onCame
           </svg>
         </button>
 
+        {/* Hidden file inputs */}
         <input
-          ref={fileInputRef}
+          ref={cameraInputRef}
           type="file"
           accept="image/*"
           capture="environment"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+        <input
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*"
           onChange={handleFileChange}
           className="hidden"
         />
