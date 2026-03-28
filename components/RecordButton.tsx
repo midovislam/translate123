@@ -152,7 +152,6 @@ export function RecordButton({ state, onToggle, onCancel, onKeyboardOpen, onCame
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          capture="environment"
           onChange={handleFileChange}
           className="hidden"
         />
