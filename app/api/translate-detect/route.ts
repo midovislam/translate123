@@ -9,6 +9,12 @@ const LANG_NAMES: Record<string, string> = {
   he: "hebrew", th: "thai", vi: "vietnamese", ro: "romanian",
 };
 
+function splitSentences(text: string): string {
+  return text
+    .replace(/([.!?。？！])\s+/g, "$1\n")
+    .trim();
+}
+
 export async function POST(req: NextRequest) {
   try {
     const result = await resolveOpenAI(req, "translate-detect");
@@ -44,11 +50,11 @@ export async function POST(req: NextRequest) {
     try {
       const parsed = JSON.parse(raw);
       detected = parsed.detected;
-      translation = parsed.translation;
+      translation = splitSentences(parsed.translation);
     } catch {
       // Fallback: assume langA → langB
       detected = langA;
-      translation = raw;
+      translation = splitSentences(raw);
     }
 
     const sourceLang = detected === langB ? langB : langA;

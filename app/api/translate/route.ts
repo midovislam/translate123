@@ -9,6 +9,12 @@ const LANG_NAMES: Record<string, string> = {
   he: "hebrew", th: "thai", vi: "vietnamese", ro: "romanian",
 };
 
+function splitSentences(text: string): string {
+  return text
+    .replace(/([.!?。？！])\s+/g, "$1\n")
+    .trim();
+}
+
 export async function POST(req: NextRequest) {
   try {
     const result = await resolveOpenAI(req, "translate");
@@ -36,7 +42,7 @@ export async function POST(req: NextRequest) {
       temperature: 0.3,
     });
 
-    const translation = completion.choices[0]?.message?.content?.trim() ?? "";
+    const translation = splitSentences(completion.choices[0]?.message?.content?.trim() ?? "");
 
     return NextResponse.json({ translation });
   } catch (err) {
