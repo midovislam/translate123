@@ -2,9 +2,11 @@
 import { useCallback, useState, useEffect, useRef } from "react";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useConversation } from "@/hooks/useConversation";
+import { useStreamingTranslation } from "@/hooks/useStreamingTranslation";
 import { RecordButton } from "@/components/RecordButton";
 import { LanguagePairSelector } from "@/components/LanguagePairSelector";
 import { ConversationLog } from "@/components/ConversationLog";
+import { StreamingView } from "@/components/StreamingView";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { TextInputBar } from "@/components/TextInputBar";
 import { loadApiKey, getDeviceId, hasOnboarded, setOnboarded } from "@/lib/storage";
@@ -45,12 +47,43 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, []);
 
+  const [streamingMode, setStreamingMode] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [inputText, setInputText] = useState("");
   const [textSubmitting, setTextSubmitting] = useState(false);
   const [photoProcessing, setPhotoProcessing] = useState(false);
   const inputTextRef = useRef(inputText);
   inputTextRef.current = inputText;
+
+  const getApiHeaders = useCallback(() => apiHeaders(), []);
+  const streaming = useStreamingTranslation({
+    langA: pair.langA,
+    langB: pair.langB,
+    apiHeaders: getApiHeaders,
+    onError: (msg) => setError(msg),
+  });
+
+  const handleLightningTap = useCallback(() => {
+    setStreamingMode(true);
+    streaming.start();
+  }, [streaming]);
+
+  const handleStreamingStop = useCallback(() => {
+    streaming.stop();
+    // Save accumulated chunks as one conversation entry
+    if (streaming.chunks.length > 0) {
+      const originals = streaming.chunks.map((c) => c.original).join("\n");
+      const translations = streaming.chunks.map((c) => c.translation).join("\n");
+      const last = streaming.chunks[streaming.chunks.length - 1];
+      addEntry({
+        original: originals,
+        translation: translations,
+        sourceLang: last.sourceLang,
+        targetLang: last.targetLang,
+      });
+    }
+    setStreamingMode(false);
+  }, [streaming, addEntry]);
 
   // Submit typed text for auto-detect translation
   const handleTextSubmit = useCallback(async () => {
@@ -246,47 +279,60 @@ export default function Home() {
             </div>
           </header>
 
-          {/* Conversation log */}
-          <ConversationLog entries={mockEntry && entries.length === 0 ? [mockEntry] : entries} onUpdateEntry={mockEntry ? undefined : updateEntry} />
-
           {/* Error toast */}
           {error && (
-            <div className="mx-5 mb-2 px-4 py-2.5 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 flex items-center justify-between">
+            <div className="mx-5 my-2 px-4 py-2.5 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 flex items-center justify-between shrink-0">
               <span>{error}</span>
               <button onClick={() => setError(null)} className="ml-2 text-red-400 hover:text-red-600">✕</button>
             </div>
           )}
 
-          {/* Bottom controls */}
-          <footer className="shrink-0 border-t border-gray-100">
-            <LanguagePairSelector pair={pair} onChange={setPair} />
-            {keyboardOpen ? (
-              <div className="flex items-end">
-                <button
-                  onClick={() => { setInputText(""); setKeyboardOpen(false); }}
-                  className="shrink-0 mb-5 ml-2 w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
-                  aria-label="Back to mic"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <TextInputBar className="flex-1 min-w-0"
-                  text={inputText}
-                  onTextChange={setInputText}
-                  onSubmit={handleTextSubmit}
-                  onMicTap={transcribeRecorder.toggle}
-                  onClose={() => { setInputText(""); setKeyboardOpen(false); }}
-                  micState={transcribeRecorder.state}
-                  submitting={textSubmitting}
-                />
-              </div>
-            ) : (
-              <div className="flex justify-center pb-4 pt-1">
-                <RecordButton state={recorder.state} onToggle={recorder.toggle} onCancel={recorder.cancel} onKeyboardOpen={() => setKeyboardOpen(true)} onCameraCapture={handlePhotoCapture} cameraProcessing={photoProcessing} />
-              </div>
-            )}
-          </footer>
+          {/* Main content area */}
+          {streamingMode ? (
+            <StreamingView
+              chunks={streaming.chunks}
+              processingChunk={streaming.processingChunk}
+              langA={pair.langA}
+              langB={pair.langB}
+              onStop={handleStreamingStop}
+            />
+          ) : (
+            <>
+              {/* Conversation log */}
+              <ConversationLog entries={mockEntry && entries.length === 0 ? [mockEntry] : entries} onUpdateEntry={mockEntry ? undefined : updateEntry} />
+
+              {/* Bottom controls */}
+              <footer className="shrink-0 border-t border-gray-100">
+                <LanguagePairSelector pair={pair} onChange={setPair} />
+                {keyboardOpen ? (
+                  <div className="flex items-end">
+                    <button
+                      onClick={() => { setInputText(""); setKeyboardOpen(false); }}
+                      className="shrink-0 mb-5 ml-2 w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                      aria-label="Back to mic"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <TextInputBar className="flex-1 min-w-0"
+                      text={inputText}
+                      onTextChange={setInputText}
+                      onSubmit={handleTextSubmit}
+                      onMicTap={transcribeRecorder.toggle}
+                      onClose={() => { setInputText(""); setKeyboardOpen(false); }}
+                      micState={transcribeRecorder.state}
+                      submitting={textSubmitting}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex justify-center pb-4 pt-1">
+                    <RecordButton state={recorder.state} onToggle={recorder.toggle} onCancel={recorder.cancel} onKeyboardOpen={() => setKeyboardOpen(true)} onCameraCapture={handlePhotoCapture} cameraProcessing={photoProcessing} onLightningTap={handleLightningTap} />
+                  </div>
+                )}
+              </footer>
+            </>
+          )}
 
           {/* Settings overlay */}
           {showSettings && (

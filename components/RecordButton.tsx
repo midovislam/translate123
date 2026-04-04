@@ -9,9 +9,10 @@ interface Props {
   onKeyboardOpen: () => void;
   onCameraCapture: (file: File) => void;
   cameraProcessing?: boolean;
+  onLightningTap?: () => void;
 }
 
-export function RecordButton({ state, onToggle, onCancel, onKeyboardOpen, onCameraCapture, cameraProcessing }: Props) {
+export function RecordButton({ state, onToggle, onCancel, onKeyboardOpen, onCameraCapture, cameraProcessing, onLightningTap }: Props) {
   const isRecording = state === "recording";
   const isProcessing = state === "processing";
   const isBusy = isProcessing || cameraProcessing;
@@ -180,18 +181,35 @@ export function RecordButton({ state, onToggle, onCancel, onKeyboardOpen, onCame
           </span>
         </button>
 
-        {/* Keyboard button — right */}
-        <button
-          onClick={onKeyboardOpen}
-          disabled={isRecording || isBusy}
-          className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors disabled:opacity-30"
-          aria-label="Type to translate"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-            <rect x="2" y="4" width="20" height="16" rx="2" />
-            <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8" />
-          </svg>
-        </button>
+        {/* Right side buttons */}
+        <div className="flex flex-col items-center gap-2">
+          {/* Keyboard button */}
+          <button
+            onClick={onKeyboardOpen}
+            disabled={isRecording || isBusy}
+            className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors disabled:opacity-30"
+            aria-label="Type to translate"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8" />
+            </svg>
+          </button>
+
+          {/* Lightning (streaming) button */}
+          {onLightningTap && (
+            <button
+              onClick={onLightningTap}
+              disabled={isRecording || isBusy}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-gray-300 hover:text-amber-400 transition-colors disabled:opacity-30"
+              aria-label="Lightning mode"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M13 2L3 14h9l-1 10 10-12h-9l1-10z" />
+              </svg>
+            </button>
+          )}
+        </div>
 
         {/* Hidden file inputs */}
         <input

@@ -9,6 +9,7 @@ const COST_MAP = {
   "translate-photo": 0.003,
   transcribe: 0.003,
   process: 0.004,
+  "stream-chunk": 0.003,
   tts: 0.005,
 } as const;
 
